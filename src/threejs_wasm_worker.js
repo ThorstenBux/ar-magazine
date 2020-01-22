@@ -21,13 +21,25 @@ var trackedMatrix = {
 }
 
 var markers = {
-    "pinball": {
-        width: 1637,
-        height: 2048,
-        dpi: 250,
-        url: "../../trackables/pinball",
-    },
+    "alterra": {
+      width: 750,
+      height: 563,
+      dpi: 150,
+      url: "../../trackables/Alterra_Postcard_2",
+  },
 };
+
+  var videoScene = document.createElement('video');
+  videoScene.muted = true
+  videoScene.src = '../data/BigBuckBunny_320x180.mp4';
+  // video.play()
+  videoScene.autoplay = true;
+  window.videoScene = videoScene
+
+  var texture = new THREE.VideoTexture( videoScene );
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.format = THREE.RGBFormat;
 
 var setMatrix = function (matrix, value) {
     var array = [];
@@ -88,6 +100,16 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
     root.matrixAutoUpdate = false;
     root.add(sphere);
 
+    var videoOverlay = new THREE.Mesh(
+    new THREE.PlaneGeometry(120,90),
+    new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide})
+    );
+    videoOverlay.position.x = 60
+    videoOverlay.position.y = 45
+    // videoOverlay.rotation.x = Math.PI;
+    // videoOverlay.rotation.y = Math.PI;
+    root.add(videoOverlay);
+
     var load = function() {
         vw = input_width;
         vh = input_height;
@@ -97,14 +119,14 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
 
         sw = vw * sscale;
         sh = vh * sscale;
-        video.style.width = sw + "px";
-        video.style.height = sh + "px";
+        // video.style.width = sw + "px";
+        // video.style.height = sh + "px";
         // container.style.width = sw + "px";
         // container.style.height = sh + "px";
-        canvas_draw.style.clientWidth = sw + "px";
-        canvas_draw.style.clientHeight = sh + "px";
-        canvas_draw.width = sw;
-        canvas_draw.height = sh;
+        // canvas_draw.style.clientWidth = sw + "px";
+        // canvas_draw.style.clientHeight = sh + "px";
+        // canvas_draw.width = sw;
+        // canvas_draw.height = sh;
         w = vw * pscale;
         h = vh * pscale;
         pw = Math.max(w, h / 3 * 4);
@@ -116,7 +138,7 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
         canvas_process.width = pw;
         canvas_process.height = ph;
 
-        renderer.setSize(sw, sh);
+        renderer.setSize(vw, vh);
 
         worker.postMessage({type: "load", pw: pw, ph: ph, camera_para: camera_para, marker: marker.url});
 
@@ -185,18 +207,24 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
 
         if (!world) {
             sphere.visible = false;
+            videoOverlay.visible = false
+            videoScene.pause();
         } else {
-            sphere.visible = true;
-                  // interpolate matrix
-                  for (var i = 0; i < 16; i++) {
-                    trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
-                    trackedMatrix.interpolated[i] =
-                      trackedMatrix.interpolated[i] +
-                      trackedMatrix.delta[i] / interpolationFactor;
-                  }
+          // sphere.visible = true;
+          videoOverlay.visible = true;
+          console.log('Video play');
+          videoScene.play();
+          videoScene.muted = false;
+          // interpolate matrix
+          for (var i = 0; i < 16; i++) {
+            trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
+            trackedMatrix.interpolated[i] =
+              trackedMatrix.interpolated[i] +
+              trackedMatrix.delta[i] / interpolationFactor;
+          }
 
-                  // set matrix of 'root' by detected 'world' matrix
-                  setMatrix(root.matrix, trackedMatrix.interpolated);
+          // set matrix of 'root' by detected 'world' matrix
+          setMatrix(root.matrix, trackedMatrix.interpolated);
         }
         renderer.render(scene, camera);
     };
