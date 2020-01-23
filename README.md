@@ -1,4 +1,4 @@
-# levelOne
+# ar-magazine
 
 ToDo:
 
