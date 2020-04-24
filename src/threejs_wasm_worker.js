@@ -32,8 +32,14 @@ var markers = {
   var videoScene = document.createElement('video');
   videoScene.muted = true
   videoScene.src = '../data/BigBuckBunny_320x180.mp4';
+  videoScene.load();
+  videoScene.setAttribute('playsInline', true)
+  videoScene.playsInline = true;
   // video.play()
-  videoScene.autoplay = true;
+  videoScene.autoplay = false;
+  videoScene.addEventListener('canplaythrough',() => {
+    videoScene.autoplay = true;
+  })
   window.videoScene = videoScene
 
   var texture = new THREE.VideoTexture( videoScene );
@@ -210,11 +216,18 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
             videoOverlay.visible = false
             videoScene.pause();
         } else {
-          // sphere.visible = true;
-          videoOverlay.visible = true;
-          console.log('Video play');
-          videoScene.play();
-          videoScene.muted = false;
+          if (!videoOverlay.visible) {
+            videoOverlay.visible = true;
+            console.log('Video play');
+            if (videoScene.paused && videoScene.autoplay === true) {
+              try {
+                videoScene.play();
+              } catch (e) {
+                videoScene.muted = true;
+                videoScene.play();
+              }
+            }
+          }
           // interpolate matrix
           for (var i = 0; i < 16; i++) {
             trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
