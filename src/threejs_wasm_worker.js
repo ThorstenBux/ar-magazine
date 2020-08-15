@@ -25,27 +25,27 @@ var markers = {
       width: 750,
       height: 563,
       dpi: 150,
-      url: "../../trackables/Alterra_Postcard_2",
+      url: "../../trackables/Alterra_Ticket_1",
   },
 };
 
-  var videoScene = document.createElement('video');
-  videoScene.muted = true
-  videoScene.src = '../data/BigBuckBunny_320x180.mp4';
-  videoScene.load();
-  videoScene.setAttribute('playsInline', true)
-  videoScene.playsInline = true;
-  // video.play()
-  videoScene.autoplay = false;
-  videoScene.addEventListener('canplaythrough',() => {
-    videoScene.autoplay = true;
-  })
-  window.videoScene = videoScene
+  // var videoScene = document.createElement('video');
+  // videoScene.muted = true
+  // videoScene.src = '../data/BigBuckBunny_320x180.mp4';
+  // videoScene.load();
+  // videoScene.setAttribute('playsInline', true)
+  // videoScene.playsInline = true;
+  // // video.play()
+  // videoScene.autoplay = false;
+  // videoScene.addEventListener('canplaythrough',() => {
+  //   videoScene.autoplay = true;
+  // })
+  // window.videoScene = videoScene
 
-  var texture = new THREE.VideoTexture( videoScene );
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.format = THREE.RGBFormat;
+  // var texture = new THREE.VideoTexture( videoScene );
+  // texture.minFilter = THREE.LinearFilter;
+  // texture.magFilter = THREE.LinearFilter;
+  // texture.format = THREE.RGBFormat;
 
 var setMatrix = function (matrix, value) {
     var array = [];
@@ -75,6 +75,7 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
     var pw, ph;
     var ox, oy;
     var camera_para = '../../data/camera_para.dat'
+    var cameraMatrix = {}
 
     var canvas_process = document.createElement('canvas');
     var context_process = canvas_process.getContext('2d');
@@ -104,17 +105,50 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
     sphere.scale.set(200, 200, 200);
 
     root.matrixAutoUpdate = false;
+    var axesHelper = new THREE.AxesHelper( 50 );
+    root.add( axesHelper );    
     root.add(sphere);
 
-    var videoOverlay = new THREE.Mesh(
-    new THREE.PlaneGeometry(120,90),
-    new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide})
-    );
-    videoOverlay.position.x = 60
-    videoOverlay.position.y = 45
-    // videoOverlay.rotation.x = Math.PI;
-    // videoOverlay.rotation.y = Math.PI;
-    root.add(videoOverlay);
+    var resize = function() {
+      vw = video.videoWidth;
+      vh = video.videoHeight;
+
+      pscale = 320 / Math.max(vw, vh / 3 * 4);
+      sscale = isMobile() ? window.outerWidth / input_width : 1;
+
+      sw = vw * sscale;
+      sh = vh * sscale;
+      w = vw * pscale;
+      h = vh * pscale;
+      pw = Math.max(w, h / 3 * 4);
+      ph = Math.max(h, w / 4 * 3);
+      ox = (pw - w) / 2;
+      oy = (ph - h) / 2;
+      canvas_process.style.clientWidth = pw + "px";
+      canvas_process.style.clientHeight = ph + "px";
+      canvas_process.width = pw;
+      canvas_process.height = ph;
+
+      renderer.setSize(vw, vh);
+
+      //Update camera matrix
+      if (cameraMatrix) {
+        console.log('cameraMatrix', cameraMatrix)
+        var ratioW = pw / w;
+        var ratioH = ph / h;
+        var proj = {}
+        Object.assign(proj, cameraMatrix)
+        proj[0] *= ratioW;
+        proj[4] *= ratioW;
+        proj[8] *= ratioW;
+        proj[12] *= ratioW;
+        proj[1] *= ratioH;
+        proj[5] *= ratioH;
+        proj[9] *= ratioH;
+        proj[13] *= ratioH;
+        setMatrix(camera.projectionMatrix, proj);
+      }
+    }
 
     var load = function() {
         vw = input_width;
@@ -153,6 +187,7 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
             switch (msg.type) {
                 case "loaded": {
                     var proj = JSON.parse(msg.proj);
+                    Object.assign(cameraMatrix, proj)
                     var ratioW = pw / w;
                     var ratioH = ph / h;
                     proj[0] *= ratioW;
@@ -213,21 +248,24 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
 
         if (!world) {
             sphere.visible = false;
-            videoOverlay.visible = false
-            videoScene.pause();
+            axesHelper.visible = false;
+            // videoOverlay.visible = false
+            // videoScene.pause();
         } else {
-          if (!videoOverlay.visible) {
-            videoOverlay.visible = true;
-            console.log('Video play');
-            if (videoScene.paused && videoScene.autoplay === true) {
-              try {
-                videoScene.play();
-              } catch (e) {
-                videoScene.muted = true;
-                videoScene.play();
-              }
-            }
-          }
+          // if (!videoOverlay.visible) {
+            // videoOverlay.visible = true;
+            console.log('Detected');
+            // sphere.visible = true;
+            axesHelper.visible = true;
+            // if (videoScene.paused && videoScene.autoplay === true) {
+            //   try {
+            //     videoScene.play();
+            //   } catch (e) {
+            //     videoScene.muted = true;
+            //     videoScene.play();
+            //   }
+            // }
+          // }
           // interpolate matrix
           for (var i = 0; i < 16; i++) {
             trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
@@ -243,9 +281,20 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
     };
 
     function process() {
+      resize();
       context_process.fillStyle = "black";
       context_process.fillRect(0, 0, pw, ph);
       context_process.drawImage(video, 0, 0, vw, vh, ox, oy, w, h);
+      // console.log('video.videoWidth', video.videoWidth)
+      // console.log('video.videoHeight', video.videoHeight)
+      // console.log('vw', vw)
+      // console.log('vh', vh)
+      // console.log('ox', ox)
+      // console.log('oy', oy)
+      // console.log('w', w)
+      // console.log('h', h)
+      // console.log('pw', pw)
+      // console.log('ph', ph)
 
       var imageData = context_process.getImageData(0, 0, pw, ph);
       worker.postMessage({ type: "process", imagedata: imageData }, [
