@@ -29,24 +29,6 @@ var markers = {
   },
 };
 
-  // var videoScene = document.createElement('video');
-  // videoScene.muted = true
-  // videoScene.src = '../data/BigBuckBunny_320x180.mp4';
-  // videoScene.load();
-  // videoScene.setAttribute('playsInline', true)
-  // videoScene.playsInline = true;
-  // // video.play()
-  // videoScene.autoplay = false;
-  // videoScene.addEventListener('canplaythrough',() => {
-  //   videoScene.autoplay = true;
-  // })
-  // window.videoScene = videoScene
-
-  // var texture = new THREE.VideoTexture( videoScene );
-  // texture.minFilter = THREE.LinearFilter;
-  // texture.magFilter = THREE.LinearFilter;
-  // texture.format = THREE.RGBFormat;
-
 var setMatrix = function (matrix, value) {
     var array = [];
     for (var key in value) {
@@ -133,7 +115,6 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
 
       //Update camera matrix
       if (cameraMatrix) {
-        console.log('cameraMatrix', cameraMatrix)
         var ratioW = pw / w;
         var ratioH = ph / h;
         var proj = {}
@@ -159,14 +140,6 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
 
         sw = vw * sscale;
         sh = vh * sscale;
-        // video.style.width = sw + "px";
-        // video.style.height = sh + "px";
-        // container.style.width = sw + "px";
-        // container.style.height = sh + "px";
-        // canvas_draw.style.clientWidth = sw + "px";
-        // canvas_draw.style.clientHeight = sh + "px";
-        // canvas_draw.width = sw;
-        // canvas_draw.height = sh;
         w = vw * pscale;
         h = vh * pscale;
         pw = Math.max(w, h / 3 * 4);
@@ -249,23 +222,9 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
         if (!world) {
             sphere.visible = false;
             axesHelper.visible = false;
-            // videoOverlay.visible = false
-            // videoScene.pause();
+
         } else {
-          // if (!videoOverlay.visible) {
-            // videoOverlay.visible = true;
-            console.log('Detected');
-            // sphere.visible = true;
-            axesHelper.visible = true;
-            // if (videoScene.paused && videoScene.autoplay === true) {
-            //   try {
-            //     videoScene.play();
-            //   } catch (e) {
-            //     videoScene.muted = true;
-            //     videoScene.play();
-            //   }
-            // }
-          // }
+          axesHelper.visible = true;
           // interpolate matrix
           for (var i = 0; i < 16; i++) {
             trackedMatrix.delta[i] = world[i] - trackedMatrix.interpolated[i];
@@ -281,20 +240,13 @@ function start2(container, marker, video, input_width, input_height, canvas_draw
     };
 
     function process() {
-      resize();
+      // only resize if videoWith changes -> if phone was rotated
+      if(video.videoWidth != vw) {
+        resize();
+      }
       context_process.fillStyle = "black";
       context_process.fillRect(0, 0, pw, ph);
       context_process.drawImage(video, 0, 0, vw, vh, ox, oy, w, h);
-      // console.log('video.videoWidth', video.videoWidth)
-      // console.log('video.videoHeight', video.videoHeight)
-      // console.log('vw', vw)
-      // console.log('vh', vh)
-      // console.log('ox', ox)
-      // console.log('oy', oy)
-      // console.log('w', w)
-      // console.log('h', h)
-      // console.log('pw', pw)
-      // console.log('ph', ph)
 
       var imageData = context_process.getImageData(0, 0, pw, ph);
       worker.postMessage({ type: "process", imagedata: imageData }, [
